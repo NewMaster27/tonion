@@ -98,9 +98,6 @@ function myip(){
 rand=$(openssl rand -hex 4 | fold -w1 | shuf | paste -sd "" -)
 new="${host}${rand}"
 
-sudo hostnamectl set-hostname "$new" >/dev/null 2>&1
-sudo systemctl daemon-reload >/dev/null 2>&1
-
 if ss -tulpn | grep -E "9040|5353" >/dev/null 2>&1 && pgrep tor >/dev/null 2>&1; then
    echo -e "\n${GREEN}[${WHITE}+${GREEN}]${WHITE} You are under the tor network: ${NC}" 
    sleep 1
@@ -161,9 +158,6 @@ function start(){
 host="GENERIC-DESKTOP-"
 rand=$(openssl rand -hex 4 | fold -w1 | shuf | paste -sd "" -)
 new="${host}${rand}"
-
-sudo hostnamectl set-hostname "$new" >/dev/null 2>&1 
-sudo systemctl daemon-reload >/dev/null 2>&1
 
 if [ "$EUID" -ne 0 ]; then
 
@@ -348,8 +342,6 @@ host="GENERIC-DESKTOP-"
 rand=$(openssl rand -hex 4 | fold -w1 | shuf | paste -sd "" -)
 new="${host}${rand}"
 
-sudo hostnamectl set-hostname "$new" >/dev/null 2>&1
-sudo systemctl daemon-reload >/dev/null 2>&1
 echo -e "\n${RED}[${WHITE}-${RED}]${WHITE} Killing tor...${NC}"
 
 sudo pkill -9 tor >/dev/null 2>&1 && sudo killall -9 tor >/dev/null 2>&1
