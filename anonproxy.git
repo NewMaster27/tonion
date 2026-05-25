@@ -62,8 +62,7 @@ fi
 
 if ! tor --verify-config >/dev/null 2>&1; then
 
-echo -e "\n${RED}[${NC}*${RED}]${YELLOW} WARN${WHITE}: Tor's configuration file is not valid, you must check it manually or script simply wont run${NC}"
-exit 1
+echo -e "\n${RED}[${NC}*${RED}]${YELLOW} WARN${WHITE}: Tor's configuration file is not valid, you must check it manually or script may fail${NC}"
 
 fi
 
