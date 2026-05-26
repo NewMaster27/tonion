@@ -50,11 +50,11 @@ if [ ! command -v nc >/dev/null 2>&1 && ! command -v git >/dev/null 2>&1 && ! co
             wait
 
       elif [[ $(command -v pkg) ]]; then
-            pkg install ${pkgs[@]}"
+            pkg install "${pkgs[@]}"
             wait
 
       elif [[ $(command -v flatpak) ]]; then
-            flatpak install ${pkgs[@]}"
+            flatpak install "${pkgs[@]}"
             wait
       else
             echo -e "\n${RED}[${WHITE}!${RED}]${WHITE} Unsupported package manager, Install packages ${RED}manually.${NC}"
