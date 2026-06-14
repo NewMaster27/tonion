@@ -40,9 +40,9 @@ if ! (command -v nc >/dev/null 2>&1 && command -v curl >/dev/null 2>&1 && comman
 
         elif [[ $(command -v dnf) ]]; then
               
-              pkgs=( nmap-ncat curl tor iptables-nft nftables procps-ng NetworkManger iproute coreutils util-linux bash sudo ) 
+              pkgs=( epl-release nmap-ncat curl tor iptables-nft nftables procps-ng NetworkManger iproute coreutils util-linux bash sudo ) 
 
-              if ! dnf -y install "${pkgs[@]}"; then
+              if ! dnf -y install --allowerasing "${pkgs[@]}"; then
 	             echo -e "${RED}[${GREEN}ERR${RED}]${GREEN} Ahh.. sorry if TheOnionBox is not being perfect.. But there are some missing dependencies... Please, can you install: ${YELLOW}(${GREEN}${pkgs[@]}${YELLOW})${NC}"
 	             exit 1
 	          fi
