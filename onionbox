@@ -166,7 +166,7 @@ myip(){
 
 export agent=( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36' 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Edg/148.0.3967.83' )
 
-if ss -tulpn | grep -iE "6969|9150|9151|9140" >/dev/null 2>&1; then
+if ss -tulpn | grep -iE "6969|9150|9151" >/dev/null 2>&1; then
 
    echo -e "\n${BLUE}[${GREEN}INFO${BLUE}]${P} Your Tor Public IP${NC}:"
 
@@ -196,7 +196,7 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-if ss -tulpn | grep -iE "6969|9150|9151|9140" >/dev/null 2>&1; then
+if ss -tulpn | grep -iE "6969|9150|9151" >/dev/null 2>&1; then
    echo -e "\n${P}[${GREEN}INFO${P}]${GREEN} TheOnionBox is already running${NC}"
    exit 1
 fi
@@ -204,46 +204,37 @@ fi
 sudo setenforce 0 >/dev/null 2>&1
 sudo semanage permissive -a unconfirmed_t >/dev/null 2>&1
 
-sudo nft -f - << 'EOF'
-    flush ruleset
+sudo nft flush ruleset
 
-    table inet onionbox {
-        chain filter_input {
-            type filter hook input priority 0; policy drop;
-            iifname "lo" accept
-            ct state established,related accept
-            iifname "lo" icmp type echo-request ct state established,related accept
-            icmp type echo-request drop
-            icmpv6 type echo-request drop
-        }
+sudo nft add table inet onionbox_filter
+sudo nft add chain inet onionbox_filter filter_input { type filter hook input priority 0 \; policy drop \; }
+sudo nft add chain inet onionbox_filter filter_forward { type filter hook forward priority 0 \; policy drop \; }
+sudo nft add chain inet onionbox_filter filter_output { type filter hook output priority 0 \; policy drop \; }
 
-        chain filter_forward {
-            type filter hook forward priority 0; policy drop;
-        }
+sudo nft add rule inet onionbox_filter filter_input iifname "lo" accept
+sudo nft add rule inet onionbox_filter filter_input ct state established,related accept
+sudo nft add rule inet onionbox_filter filter_input iifname "lo" icmp type echo-request ct state established,related accept
+sudo nft add rule inet onionbox_filter filter_input icmp type echo-request drop
+sudo nft add rule inet onionbox_filter filter_input icmpv6 type echo-request drop
 
-        chain filter_output {
-            type filter hook output priority 0; policy drop;
-            oifname "lo" accept
-            ct state new,established,related accept
-            oifname "lo" icmp type echo-request ct state new,established,related accept
-            icmp type echo-request drop
-            skuid "$TOR_USER" accept
-            ip daddr 127.0.0.1 udp dport 5353 accept
-            ip daddr 127.0.0.1 tcp dport 6969 accept
-            reject
-        }
+sudo nft add rule inet onionbox_filter filter_output oifname "lo" accept
+sudo nft add rule inet onionbox_filter filter_output ct state new,established,related accept
+sudo nft add rule inet onionbox_filter filter_output oifname "lo" icmp type echo-request ct state new,established,related accept
+sudo nft add rule inet onionbox_filter filter_output icmp type echo-request drop
+sudo nft add rule inet onionbox_filter filter_output skuid "$TOR_USER" accept
+sudo nft add rule inet onionbox_filter filter_output ip daddr 127.0.0.1 udp dport 5353 accept
+sudo nft add rule inet onionbox_filter filter_output ip daddr 127.0.0.1 tcp dport 6969 accept
+sudo nft add rule inet onionbox_filter filter_output reject
 
-        chain tor_nat_out {
-            type nat hook output priority 100;
-            skuid "$TOR_USER" return
-            ip daddr { 127.0.0.0/8, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 169.254.0.0/16, 255.255.255.255/32, 224.0.0.0/4 } return
-            ip daddr 127.0.0.1 udp dport 53 redirect to :5353
-            ip daddr 127.0.0.1 tcp dport 53 redirect to :5353
-            udp dport 53 redirect to :5353
-            tcp flags & (syn | rst | ack) == syn redirect to :6969
-        }
-    }
-EOF
+sudo nft add table ip onionbox_nat
+sudo nft add chain ip onionbox_nat tor_nat_out { type nat hook output priority 100 \; policy accept \; }
+
+sudo nft add rule ip onionbox_nat tor_nat_out skuid "$TOR_USER" return
+sudo nft add rule ip onionbox_nat tor_nat_out ip daddr { 127.0.0.0/8, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 169.254.0.0/16, 255.255.255.255/32, 224.0.0.0/4 } return
+sudo nft add rule ip onionbox_nat tor_nat_out ip daddr 127.0.0.1 udp dport 53 redirect to 5353
+sudo nft add rule ip onionbox_nat tor_nat_out ip daddr 127.0.0.1 tcp dport 53 redirect to 5353
+sudo nft add rule ip onionbox_nat tor_nat_out udp dport 53 redirect to 5353
+sudo nft add rule ip onionbox_nat tor_nat_out tcp redirect to 6969
 
    sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null 2>&1
    sysctl -w net.ipv4.icmp_echo_ignore_all=1 >/dev/null 2>&1
@@ -266,9 +257,8 @@ EOF
    sleep 4
 
    sudo -u $TOR_USER tor --RunAsDaemon 1 >/dev/null 2>&1
-   echo -e "\n${BLUE}[${GREEN}STATUS${BLUE}]${GREEN} TheOnionBox is running${BLUE}(${GREEN}done${BLUE})${NC}"
+   echo -e "\n${BLUE}[${GREEN}STATUS${BLUE}]${
 }
-
 config(){
 
 if ! cat /etc/tor/torrc | grep -iE "UseBridges 1" >/dev/null 2>&1; then
@@ -331,7 +321,7 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-if ss -tulpn | grep -iE "6969|9150|9151|9140" >/dev/null 2>&1 || pgrep tor >/dev/null 2>&1; then
+if ss -tulpn | grep -iE "6969|9150|9151" >/dev/null 2>&1 || pgrep tor >/dev/null 2>&1; then
 
    echo -e "\n${RED}[${GREEN}STATUS${RED}]${GREEN} Stopping TheOnionBox..${NC}"
    
@@ -375,7 +365,7 @@ case $1 in
 
 mode=1
 
-if ! ss -tulpn | grep -iE "6969|9150|9151|9140" >/dev/null 2>&1; then
+if ! ss -tulpn | grep -iE "6969|9150|9151" >/dev/null 2>&1; then
     echo -e "\n${BLUE}[${GREEN}STATUS${BLUE}]${GREEN} TheOnionBox is starting, please wait..${NC}"
     config
     exit 0
@@ -422,7 +412,7 @@ changeid|--changeid|-changeid)
 
 mode=5
 
-if ss -tulpn | grep -iE "6969|9150|9151|9140" >/dev/null 2>&1 || pgrep tor >/dev/null 2>&1; then
+if ss -tulpn | grep -iE "6969|9150|9151" >/dev/null 2>&1 || pgrep tor >/dev/null 2>&1; then
 
    echo -e "\n${BLUE}[${YELLOW}WARN${BLUE}]${P} Changing Your Tor IP..${NC}"
 
@@ -642,7 +632,7 @@ if [ -z "$link" ]; then
   exit 1
 fi
 
-if pgrep tor >/dev/null 2>&1 || ss -tulpn | grep -iE "6969|9150|9151|9140" >/dev/null 2>&1; then
+if pgrep tor >/dev/null 2>&1 || ss -tulpn | grep -iE "6969|9150|9151" >/dev/null 2>&1; then
 
 echo -e "\n${P}[${GREEN}*${P}]${GREEN} Trying to resolv ${YELLOW}"$link"${GREEN}...${NC}"
 curl --socks5-hostname 127.0.0.1:9150 "$link" && echo -e "\n${BLUE}[${GREEN}STATUS${BLUE}]${YELLOW} "$link" ${GREEN}resolved !${NC}" || echo -e "\n${RED}[${GREEN}ERR${RED}]${GREEN} An error ocurred while trying to resolv: $link${NC}"
