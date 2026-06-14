@@ -257,7 +257,7 @@ sudo nft add rule ip onionbox_nat tor_nat_out tcp redirect to 6969
    sleep 4
 
    sudo -u $TOR_USER tor --RunAsDaemon 1 >/dev/null 2>&1
-   echo -e "\n${BLUE}[${GREEN}STATUS${BLUE}]${
+   echo -e "\n${BLUE}[${GREEN}STATUS${BLUE}]${GREEN} TheOnionBox is running${BLUE}(${GREEN}done${BLUE}"
 }
 config(){
 
